@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 #===============================================================================
-# TP 2 : Script BorgBackup Autonome avec Dépôt Distant Chiffré
-# Author: Farah EL Alem
-# Description: Script 100% autonome pour backup avec BorgBackup
-# Version: 1.0
+# TP 2 : Script BorgBackup Autonome avec Alertes Email
+# Author: Farah El Alem
+# Description: Script 100% autonome avec notifications email
+# Version: 7.0 - Avec alertes email automatiques
 #===============================================================================
 
 set -euo pipefail
@@ -19,6 +19,7 @@ SSH_KEY="/var/lib/backup/.ssh/id_backup"
 BORG_REPO="${REMOTE_USER}@${REMOTE_HOST}:/backup/borg-repo"
 LOG_DIR="/backup/logs"
 LOG_FILE="$LOG_DIR/borgbackup_$(date +%Y%m%d).log"
+EMAIL_CONFIG="/backup/.email_config"
 
 # Sources à sauvegarder
 declare -a BACKUP_SOURCES=(
@@ -44,7 +45,197 @@ KEEP_DAILY=7
 KEEP_WEEKLY=4
 KEEP_MONTHLY=3
 
-#----- Fonctions ---------------------------------------------------------------
+#----- Fonctions Email ---------------------------------------------------------
+install_email_tools() {
+    log "INFO" "Installation des outils email..."
+    
+    case "$OS" in
+        debian|ubuntu)
+            apt-get update -qq
+            apt-get install -y msmtp msmtp-mta mailutils
+            ;;
+        rhel|centos|fedora)
+            yum install -y msmtp mailx
+            ;;
+        *)
+            log "WARNING" "Distribution non supportée pour l'installation automatique d'email"
+            return 1
+            ;;
+    esac
+    
+    log "INFO" "Outils email installés avec succès"
+}
+
+setup_email() {
+    log "INFO" "===== Configuration des alertes email ====="
+    
+    # Vérifier si déjà configuré
+    if [ -f "$EMAIL_CONFIG" ]; then
+        log "INFO" "Configuration email déjà présente"
+        return 0
+    fi
+    
+    # Installer les outils si nécessaire
+    if ! command -v msmtp &> /dev/null; then
+        log "INFO" "Installation de msmtp..."
+        install_email_tools || {
+            log "ERROR" "Impossible d'installer msmtp"
+            return 1
+        }
+    fi
+    
+    echo ""
+    echo "╔════════════════════════════════════════════════════════╗"
+    echo "║  CONFIGURATION DES ALERTES EMAIL                      ║"
+    echo "╚════════════════════════════════════════════════════════╝"
+    echo ""
+    
+    # Demander les informations
+    read -p "Votre email (destinataire des alertes) : " ADMIN_EMAIL
+    
+    echo ""
+    echo "Choisissez votre fournisseur email :"
+    echo "1) Gmail"
+    echo "2) Outlook/Hotmail"
+    echo "3) Yahoo"
+    echo "4) Autre (SMTP personnalisé)"
+    read -p "Choix [1-4] : " EMAIL_PROVIDER
+    
+    case $EMAIL_PROVIDER in
+        1)
+            SMTP_HOST="smtp.gmail.com"
+            SMTP_PORT="587"
+            echo ""
+            echo "⚠️  Pour Gmail, vous devez créer un mot de passe d'application :"
+            echo "   1. Allez sur https://myaccount.google.com/security"
+            echo "   2. Activez la validation en 2 étapes"
+            echo "   3. Créez un mot de passe d'application"
+            echo ""
+            ;;
+        2)
+            SMTP_HOST="smtp-mail.outlook.com"
+            SMTP_PORT="587"
+            ;;
+        3)
+            SMTP_HOST="smtp.mail.yahoo.com"
+            SMTP_PORT="587"
+            ;;
+        4)
+            read -p "Serveur SMTP : " SMTP_HOST
+            read -p "Port SMTP : " SMTP_PORT
+            ;;
+        *)
+            log "ERROR" "Choix invalide"
+            return 1
+            ;;
+    esac
+    
+    read -p "Email d'envoi : " SMTP_USER
+    read -sp "Mot de passe : " SMTP_PASS
+    echo ""
+    
+    # Créer la configuration msmtp
+    cat > /tmp/msmtprc << EOF
+defaults
+auth           on
+tls            on
+tls_trust_file /etc/ssl/certs/ca-certificates.crt
+logfile        /var/log/msmtp.log
+
+account        backup
+host           $SMTP_HOST
+port           $SMTP_PORT
+from           $SMTP_USER
+user           $SMTP_USER
+password       $SMTP_PASS
+
+account default : backup
+EOF
+    
+    # Installer la configuration
+    sudo mv /tmp/msmtprc /etc/msmtprc
+    sudo chmod 600 /etc/msmtprc
+    sudo touch /var/log/msmtp.log
+    sudo chmod 666 /var/log/msmtp.log
+    
+    # Sauvegarder l'email de l'admin
+    echo "ADMIN_EMAIL=$ADMIN_EMAIL" > "$EMAIL_CONFIG"
+    chmod 600 "$EMAIL_CONFIG"
+    
+    # Test d'envoi
+    log "INFO" "Test d'envoi d'email..."
+    if send_test_email; then
+        log "INFO" "✅ Configuration email réussie !"
+        log "INFO" "Vous recevrez désormais des alertes à : $ADMIN_EMAIL"
+    else
+        log "ERROR" "❌ Échec de l'envoi de test"
+        log "INFO" "Vérifiez vos paramètres et réessayez"
+        return 1
+    fi
+}
+
+send_test_email() {
+    if [ ! -f "$EMAIL_CONFIG" ]; then
+        return 1
+    fi
+    
+    source "$EMAIL_CONFIG"
+    
+    cat <<EOF | mail -s "✅ BorgBackup - Configuration Email Réussie" "$ADMIN_EMAIL"
+Félicitations !
+
+La configuration des alertes email pour BorgBackup est terminée.
+
+Vous recevrez désormais des notifications automatiques pour :
+- ✅ Backups réussis
+- ❌ Backups échoués  
+- ⚠️ Avertissements
+
+Serveur : $(hostname)
+Date : $(date)
+
+---
+BorgBackup Manager v7.0
+EOF
+    
+    return $?
+}
+
+send_alert() {
+    local status=$1
+    local subject=$2
+    local message=$3
+    
+    # Vérifier si email configuré
+    if [ ! -f "$EMAIL_CONFIG" ]; then
+        return 0
+    fi
+    
+    source "$EMAIL_CONFIG"
+    
+    local icon
+    case $status in
+        success) icon="✅" ;;
+        error)   icon="❌" ;;
+        warning) icon="⚠️" ;;
+        *) icon="ℹ️" ;;
+    esac
+    
+    # Envoyer l'email
+    cat <<EOF | mail -s "$icon BorgBackup - $subject" "$ADMIN_EMAIL"
+$message
+
+---
+Serveur : $(hostname)
+Date : $(date)
+Logs : $LOG_FILE
+
+---
+BorgBackup Manager v7.0
+EOF
+}
+
+#----- Fonctions Originales ----------------------------------------------------
 log() {
     local level=$1
     shift
@@ -103,14 +294,11 @@ install_borg_local() {
 install_borg_remote() {
     log "INFO" "Vérification de BorgBackup sur le serveur distant..."
     
-    # Vérifier la connexion SSH
     if ! ssh -i "$SSH_KEY" -p "$REMOTE_PORT" -o ConnectTimeout=10 "${REMOTE_USER}@${REMOTE_HOST}" "exit" 2>/dev/null; then
         log "ERROR" "Impossible de se connecter au serveur distant"
-        log "INFO" "Vérifiez les clés SSH et la connectivité"
         exit 1
     fi
     
-    # Vérifier si borg est installé sur le serveur distant
     if ssh -i "$SSH_KEY" -p "$REMOTE_PORT" "${REMOTE_USER}@${REMOTE_HOST}" "command -v borg" &> /dev/null; then
         local remote_version=$(ssh -i "$SSH_KEY" -p "$REMOTE_PORT" "${REMOTE_USER}@${REMOTE_HOST}" "borg --version" 2>&1)
         log "INFO" "BorgBackup déjà installé sur le serveur distant: $remote_version"
@@ -119,7 +307,6 @@ install_borg_remote() {
     
     log "INFO" "Installation de BorgBackup sur le serveur distant..."
     
-    # Détecter l'OS distant et installer
     ssh -i "$SSH_KEY" -p "$REMOTE_PORT" "${REMOTE_USER}@${REMOTE_HOST}" "
         if [ -f /etc/os-release ]; then
             . /etc/os-release
@@ -146,11 +333,9 @@ verify_ssh_keys() {
     
     if [ ! -f "$SSH_KEY" ]; then
         log "ERROR" "Clé SSH introuvable: $SSH_KEY"
-        log "INFO" "Générez les clés avec: ssh-keygen -t ed25519 -f $SSH_KEY"
         exit 1
     fi
     
-    # Tester la connexion
     if ssh -i "$SSH_KEY" -p "$REMOTE_PORT" -o ConnectTimeout=5 "${REMOTE_USER}@${REMOTE_HOST}" "echo 'SSH OK'" &> /dev/null; then
         log "INFO" "Connexion SSH validée"
     else
@@ -162,7 +347,6 @@ verify_ssh_keys() {
 init_repo() {
     log "INFO" "Initialisation du dépôt Borg..."
     
-    # Créer le répertoire distant avec sudo
     log "INFO" "Création du répertoire de backup distant..."
     ssh -i "$SSH_KEY" -p "$REMOTE_PORT" "${REMOTE_USER}@${REMOTE_HOST}" "
         sudo mkdir -p /backup/borg-repo
@@ -173,51 +357,69 @@ init_repo() {
         exit 1
     }
     
-    # Vérifier si le dépôt existe déjà
     if borg list "$BORG_REPO" &> /dev/null; then
         log "INFO" "Dépôt Borg déjà initialisé"
         return 0
     fi
     
-    # Initialiser le dépôt avec chiffrement
     log "INFO" "Création du dépôt chiffré (repokey-blake2)..."
     if borg init --encryption=repokey-blake2 "$BORG_REPO" 2>&1 | tee -a "$LOG_FILE"; then
         log "INFO" "Dépôt initialisé avec succès"
-        log "WARNING" "IMPORTANT: Sauvegardez la passphrase: $BORG_PASSPHRASE"
-        log "WARNING" "IMPORTANT: Exportez la clé du dépôt avec: borg key export $BORG_REPO /backup/borg-key-backup.txt"
+        send_alert "success" "Dépôt Borg Initialisé" "Le dépôt Borg a été créé avec succès sur $REMOTE_HOST"
     else
         log "ERROR" "Échec de l'initialisation du dépôt"
+        send_alert "error" "Échec Initialisation" "Impossible de créer le dépôt Borg sur $REMOTE_HOST"
         exit 1
     fi
 }
 
 create_backup() {
     local archive_name="backup-$(hostname)-$(date +%Y-%m-%d_%H-%M-%S)"
+    local start_time=$(date +%s)
     
     log "INFO" "===== Création du backup ====="
     log "INFO" "Archive: $archive_name"
     
-    # Construire les exclusions
     local exclude_opts=""
     for pattern in "${EXCLUSIONS[@]}"; do
         exclude_opts+="--exclude '$pattern' "
     done
     
-    # Créer l'archive
     log "INFO" "Sauvegarde en cours..."
     
-    eval "borg create \
+    if eval "borg create \
         --stats \
         --progress \
         --compression lz4 \
         $exclude_opts \
         '$BORG_REPO::$archive_name' \
-        ${BACKUP_SOURCES[*]}" 2>&1 | tee -a "$LOG_FILE" || {
+        ${BACKUP_SOURCES[*]}" 2>&1 | tee -a "$LOG_FILE"; then
+        
+        local end_time=$(date +%s)
+        local duration=$((end_time - start_time))
+        
+        log "INFO" "Backup créé avec succès: $archive_name"
+        
+        # Récupérer les stats
+        local stats=$(borg info "$BORG_REPO::$archive_name" 2>&1 | grep -E "Number of files|Original size|Compressed size|Deduplicated size")
+        
+        send_alert "success" "Backup Réussi" "Archive créée avec succès !
+
+Archive : $archive_name
+Durée : ${duration}s
+
+Statistiques :
+$stats"
+        
+        return 0
+    else
         log "ERROR" "Échec de la création du backup"
+        send_alert "error" "Échec Backup" "Le backup a échoué !
+
+Archive : $archive_name
+Consultez les logs : $LOG_FILE"
         return 1
-    }
-    
-    log "INFO" "Backup créé avec succès: $archive_name"
+    fi
 }
 
 list_archives() {
@@ -237,13 +439,10 @@ show_archive_content() {
     
     if [ -z "$archive" ]; then
         log "ERROR" "Nom d'archive requis"
-        log "INFO" "Usage: show <archive_name> [nombre_de_lignes]"
         return 1
     fi
     
     log "INFO" "===== Contenu de l'archive: $archive ====="
-    log "INFO" "Affichage des $lines premiers fichiers..."
-    
     borg list "$BORG_REPO::$archive" | head -n "$lines"
 }
 
@@ -272,19 +471,30 @@ extract_file() {
     log "INFO" "Restauration: $file_path depuis $archive"
     log "INFO" "Destination: $dest"
     
-    # Extraction directe
     mkdir -p "$dest"
     cd "$dest"
-    borg extract "$BORG_REPO::$archive" "$file_path" 2>&1 | tee -a "$LOG_FILE"
     
-    log "INFO" "Restauration terminée"
-    log "INFO" "Fichier restauré dans: $dest/$file_path"
+    if borg extract "$BORG_REPO::$archive" "$file_path" 2>&1 | tee -a "$LOG_FILE"; then
+        log "INFO" "Restauration terminée"
+        log "INFO" "Fichier restauré dans: $dest/$file_path"
+        send_alert "success" "Restauration Réussie" "Fichier restauré avec succès !
+
+Archive : $archive
+Fichier : $file_path
+Destination : $dest"
+    else
+        log "ERROR" "Échec de la restauration"
+        send_alert "error" "Échec Restauration" "Impossible de restaurer le fichier !
+
+Archive : $archive
+Fichier : $file_path"
+        return 1
+    fi
 }
 
 restore_interactive() {
     log "INFO" "===== Mode Restauration Interactive ====="
     
-    # Lister les archives
     echo "Archives disponibles:"
     borg list "$BORG_REPO"
     echo ""
@@ -296,7 +506,6 @@ restore_interactive() {
         return 1
     fi
     
-    # Lister le contenu de l'archive
     echo ""
     echo "Contenu de l'archive $archive:"
     borg list "$BORG_REPO::$archive" | head -20
@@ -321,15 +530,26 @@ restore_interactive() {
 prune_archives() {
     log "INFO" "===== Nettoyage des anciennes archives ====="
     
-    borg prune \
+    if borg prune \
         --list \
         --stats \
         --keep-daily=$KEEP_DAILY \
         --keep-weekly=$KEEP_WEEKLY \
         --keep-monthly=$KEEP_MONTHLY \
-        "$BORG_REPO" 2>&1 | tee -a "$LOG_FILE"
-    
-    log "INFO" "Nettoyage terminé"
+        "$BORG_REPO" 2>&1 | tee -a "$LOG_FILE"; then
+        
+        log "INFO" "Nettoyage terminé"
+        send_alert "success" "Rotation Effectuée" "Nettoyage des anciennes archives réussi !
+
+Politique de rétention :
+- Quotidien : $KEEP_DAILY
+- Hebdomadaire : $KEEP_WEEKLY
+- Mensuel : $KEEP_MONTHLY"
+    else
+        log "ERROR" "Échec du nettoyage"
+        send_alert "error" "Échec Rotation" "Le nettoyage des archives a échoué !"
+        return 1
+    fi
 }
 
 show_help() {
@@ -338,10 +558,11 @@ Usage: $(basename $0) [COMMAND] [OPTIONS]
 
 COMMANDES:
     init                  Initialiser le dépôt Borg distant
+    setup-email           Configurer les alertes email
     backup                Créer un nouveau backup
     list                  Lister toutes les archives
-    show <archive> [n]    Afficher le contenu d'une archive (n lignes, défaut: 30)
-    info <archive>        Afficher les infos détaillées d'une archive
+    show <archive> [n]    Afficher le contenu d'une archive
+    info <archive>        Afficher les infos détaillées
     restore               Mode restauration interactive
     extract               Extraire un fichier spécifique
     prune                 Nettoyer les anciennes archives
@@ -350,14 +571,10 @@ OPTIONS:
     -h, --help            Afficher cette aide
     
 EXEMPLES:
+    $(basename $0) setup-email                       # Configurer les emails
     $(basename $0) init                              # Initialiser le dépôt
     $(basename $0) backup                            # Créer un backup
     $(basename $0) list                              # Lister les archives
-    $(basename $0) show backup-2024-12-21...         # Voir le contenu (30 lignes)
-    $(basename $0) show backup-2024-12-21... 50      # Voir le contenu (50 lignes)
-    $(basename $0) info backup-2024-...              # Infos sur une archive
-    $(basename $0) restore                           # Mode interactif
-    $(basename $0) prune                             # Nettoyer les archives
     
 CONFIGURATION:
     Serveur distant : ${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_PORT}
@@ -371,13 +588,17 @@ EOF
 main() {
     local command=${1:-backup}
     
-    # Créer les répertoires
     mkdir -p "$LOG_DIR"
     
     case "$command" in
         -h|--help)
             show_help
             exit 0
+            ;;
+        setup-email)
+            check_root
+            detect_os
+            setup_email
             ;;
         init)
             log "INFO" "===== Initialisation du dépôt Borg ====="
