@@ -343,8 +343,8 @@ sudo tail -f /backup/logs/cron-backup.log
 - [msmtp Guide](https://marlam.de/msmtp/)
 
 ### Scripts
-- [backup_incremental.sh](backup_incremental.sh)
-- [borgbackup_manager.sh](borgbackup_manager.sh)
+- [backup_incremental.sh](scripts/backup_incremental.sh)
+- [borgbackup_manager.sh](scripts/borgbackup_manager.sh)
 
 ### Guides Détaillés
 - [TP1 - Guide Complet](docs/TP1-rsync.md)
