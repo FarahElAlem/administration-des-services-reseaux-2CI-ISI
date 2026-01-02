@@ -1,0 +1,39 @@
+# ======================================
+# Configuration Nginx Reverse Proxy
+# Load Balancer pour srv-web-01 et srv-web-02
+# ======================================
+
+# Définition du groupe de serveurs backend
+upstream backend_servers {
+    # Stratégie par défaut : Round Robin (tour à tour)
+    server 192.168.1.10:80;  # srv-web-01
+    server 192.168.1.11:80;  # srv-web-02
+}
+
+server {
+    # Port d'écoute du Load Balancer
+    listen 80;
+    
+    # Nom de domaine (optionnel pour le test)
+    server_name www.innov-tech.com;
+    
+    # Logs spécifiques pour le debugging
+    access_log /var/log/nginx/load-balancer-access.log;
+    error_log /var/log/nginx/load-balancer-error.log;
+    
+    location / {
+        # Proxy vers le groupe de serveurs
+        proxy_pass http://backend_servers;
+        
+        # Headers pour transmettre les infos du client aux backends
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        
+        # Timeouts
+        proxy_connect_timeout 5s;
+        proxy_send_timeout 10s;
+        proxy_read_timeout 10s;
+    }
+}
