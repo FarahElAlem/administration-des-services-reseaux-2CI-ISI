@@ -21,4 +21,5 @@ Ce script est particulièrement utile pour configurer rapidement des serveurs ou
 
 1. **Téléchargez le script** :
    ```bash
+   https://github.com/FarahElAlem/Administration-des-Services-R-seaux-2CI-ISI/blob/0e119c34221fb893050cb232d5c4ad59e5048f0a/migrate-to-netplan/migrate_to_netplan.sh
 
