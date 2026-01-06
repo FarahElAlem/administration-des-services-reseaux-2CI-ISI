@@ -1,0 +1,26 @@
+# ═══════════════════════════════════════════════════════════
+# FICHIER HOSTS POUR WINDOWS
+# Serveur LEMP - {{STUDENT_FIRSTNAME}} {{STUDENT_LASTNAME}}
+# Installation: {{INSTALL_DATE}}
+# ═══════════════════════════════════════════════════════════
+# 
+# INSTRUCTIONS:
+# 1. Ouvrir Bloc-notes en ADMINISTRATEUR
+# 2. Fichier → Ouvrir → C:\Windows\System32\drivers\etc\hosts
+# 3. Copier-coller les lignes ci-dessous À LA FIN du fichier
+# 4. Sauvegarder
+# 5. Ouvrir CMD en Admin et taper: ipconfig /flushdns
+#
+# ═══════════════════════════════════════════════════════════
+
+# Serveur LEMP - {{SERVER_HOSTNAME}}
+{{SERVER_IP}}    {{VHOST_PORTAL_DOMAIN}}
+{{SERVER_IP}}    {{VHOST_PROD_DOMAIN}}
+
+# ═══════════════════════════════════════════════════════════
+# URLs à tester:
+# - http://{{VHOST_PORTAL_DOMAIN}}/
+# - http://{{VHOST_PORTAL_DOMAIN}}/info.php
+# - http://{{VHOST_PORTAL_DOMAIN}}/pma/
+# - http://{{VHOST_PROD_DOMAIN}}/
+# ═══════════════════════════════════════════════════════════

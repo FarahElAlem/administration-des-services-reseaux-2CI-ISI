@@ -1,0 +1,44 @@
+# Configuration MariaDB optimisée
+# Généré par LEMP Auto-Installer
+# Serveur: {{SERVER_HOSTNAME}}
+
+[mysqld]
+# Répertoires de base
+datadir = /var/lib/mysql
+socket = /run/mysqld/mysqld.sock
+pid-file = /run/mysqld/mysqld.pid
+
+# Réseau
+bind-address = 127.0.0.1
+port = 3306
+
+# Performance
+max_connections = 100
+thread_cache_size = 8
+query_cache_type = 1
+query_cache_size = 16M
+query_cache_limit = 2M
+
+# InnoDB
+innodb_buffer_pool_size = 256M
+innodb_log_file_size = 64M
+innodb_flush_log_at_trx_commit = 2
+innodb_flush_method = O_DIRECT
+
+# Logs
+log_error = /var/log/mysql/error.log
+slow_query_log = 1
+slow_query_log_file = /var/log/mysql/slow.log
+long_query_time = 2
+
+# Sécurité
+local-infile = 0
+
+[client]
+port = 3306
+socket = /run/mysqld/mysqld.sock
+
+[mysqldump]
+quick
+quote-names
+max_allowed_packet = 16M

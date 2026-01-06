@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>{{SITE_TITLE}} - Blog</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+        }
+        
+        .container {
+            text-align: center;
+            background: rgba(255,255,255,0.15);
+            padding: 60px;
+            border-radius: 25px;
+            backdrop-filter: blur(15px);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+            max-width: 700px;
+        }
+        
+        .icon {
+            font-size: 5em;
+            margin-bottom: 20px;
+            animation: float 3s ease-in-out infinite;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+        }
+        
+        h1 { 
+            font-size: 4em; 
+            margin-bottom: 20px; 
+            text-shadow: 3px 3px 6px rgba(0,0,0,0.3);
+        }
+        
+        .subtitle {
+            font-size: 1.3em;
+            margin: 20px 0;
+            opacity: 0.95;
+        }
+        
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(76, 175, 80, 0.3);
+            border: 2px solid rgba(76, 175, 80, 0.6);
+            padding: 15px 30px;
+            border-radius: 50px;
+            font-size: 1.2em;
+            font-weight: bold;
+            margin: 20px 0;
+        }
+        
+        .badge::before {
+            content: "✓";
+            background: #4CAF50;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2em;
+        }
+        
+        .info {
+            margin-top: 30px;
+            font-size: 1em;
+            opacity: 0.85;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .tech-stack {
+            margin-top: 30px;
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .tech {
+            background: rgba(255,255,255,0.2);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="icon">🚀</div>
+        
+        <h1>Blog</h1>
+        
+        <p class="subtitle">Site PHP dynamique avec Nginx + PHP-FPM</p>
+        
+        <div class="badge">
+            LEMP Stack Opérationnel
+        </div>
+        
+        <div class="tech-stack">
+            <span class="tech">🐧 Linux</span>
+            <span class="tech">⚡ Nginx</span>
+            <span class="tech">🗄️ MariaDB</span>
+            <span class="tech">🐘 PHP 8.4</span>
+        </div>
+        
+        <div class="info">
+            <span>👨‍💻</span>
+            <span>{{STUDENT_FIRSTNAME}} {{STUDENT_LASTNAME}} - {{STUDENT_FORMATION}}</span>
+        </div>
+    </div>
+</body>
+</html>

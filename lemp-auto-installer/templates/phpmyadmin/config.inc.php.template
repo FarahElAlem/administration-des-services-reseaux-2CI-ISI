@@ -1,0 +1,35 @@
+<?php
+/**
+ * Configuration phpMyAdmin
+ * Généré automatiquement par LEMP Auto-Installer
+ * Date: {{INSTALL_DATE}}
+ */
+
+// Secret pour l'authentification par cookie
+$cfg['blowfish_secret'] = '{{BLOWFISH_SECRET}}';
+
+// Serveur MariaDB
+$i = 0;
+$i++;
+$cfg['Servers'][$i]['auth_type'] = 'cookie';
+$cfg['Servers'][$i]['host'] = 'localhost';
+$cfg['Servers'][$i]['compress'] = false;
+$cfg['Servers'][$i]['AllowNoPassword'] = false;
+
+// Répertoires de téléchargement/sauvegarde
+$cfg['UploadDir'] = '';
+$cfg['SaveDir'] = '';
+
+// Sécurité
+$cfg['LoginCookieValidity'] = 3600; // 1 heure
+$cfg['ForceSSL'] = false; // Activer si HTTPS configuré
+
+// Interface
+$cfg['NavigationTreeDisplayLogo'] = true;
+$cfg['NavigationTreeDisplayServers'] = false;
+$cfg['DefaultLang'] = 'fr';
+$cfg['ThemeDefault'] = 'pmahomme';
+
+// Performance
+$cfg['MaxRows'] = 50;
+$cfg['ExecTimeLimit'] = 300;

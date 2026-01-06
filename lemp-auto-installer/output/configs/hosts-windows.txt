@@ -1,0 +1,26 @@
+# ═══════════════════════════════════════════════════════════
+# FICHIER HOSTS POUR WINDOWS
+# Serveur LEMP - Farah EL ALEM
+# Installation: 2026-01-05 21:28:20
+# ═══════════════════════════════════════════════════════════
+# 
+# INSTRUCTIONS:
+# 1. Ouvrir Bloc-notes en ADMINISTRATEUR
+# 2. Fichier → Ouvrir → C:\Windows\System32\drivers\etc\hosts
+# 3. Copier-coller les lignes ci-dessous À LA FIN du fichier
+# 4. Sauvegarder
+# 5. Ouvrir CMD en Admin et taper: ipconfig /flushdns
+#
+# ═══════════════════════════════════════════════════════════
+
+# Serveur LEMP - srv-web01
+192.168.1.50    portal-rh.ing-infraFarah.lan
+192.168.1.50    prod-web.innov-techFarah.com
+
+# ═══════════════════════════════════════════════════════════
+# URLs à tester:
+# - http://portal-rh.ing-infraFarah.lan/
+# - http://portal-rh.ing-infraFarah.lan/info.php
+# - http://portal-rh.ing-infraFarah.lan/pma/
+# - http://prod-web.innov-techFarah.com/
+# ═══════════════════════════════════════════════════════════

@@ -1,0 +1,28 @@
+; Pool PHP-FPM personnalisé
+; Généré par LEMP Auto-Installer
+
+[{{POOL_NAME}}]
+user = www-data
+group = www-data
+listen = /run/php/php{{PHP_VERSION}}-fpm-{{POOL_NAME}}.sock
+listen.owner = www-data
+listen.group = www-data
+listen.mode = 0660
+
+pm = dynamic
+pm.max_children = 10
+pm.start_servers = 2
+pm.min_spare_servers = 1
+pm.max_spare_servers = 3
+pm.max_requests = 500
+
+; Variables d'environnement
+env[HOSTNAME] = {{SERVER_HOSTNAME}}
+env[PATH] = /usr/local/bin:/usr/bin:/bin
+env[TMP] = /tmp
+env[TMPDIR] = /tmp
+env[TEMP] = /tmp
+
+; Logs
+php_admin_value[error_log] = /var/log/php-fpm/{{POOL_NAME}}-error.log
+php_admin_flag[log_errors] = on
