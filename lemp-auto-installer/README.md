@@ -69,6 +69,8 @@ Modifier au minimum :
 
 ### 3. Installer
 ```bash
+# Rendre TOUS les .sh exécutables récursivement
+find . -type f -name "*.sh" -exec chmod +x {} \;
 sudo ./install.sh
 ```
 
