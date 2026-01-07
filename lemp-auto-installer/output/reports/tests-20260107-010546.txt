@@ -1,0 +1,14 @@
+═══════════════════════════════════════════════════════════
+RÉSULTATS DES TESTS - mer. 07 janv. 2026 01:05:46 +01
+═══════════════════════════════════════════════════════════
+
+Test 1: Portal RH
+  ✓ http://portal-rh.ing-infraFarah.lan/ - OK
+
+Test 2: PHP Info
+  ✗ http://portal-rh.ing-infraFarah.lan/info.php - ERREUR
+
+Test 3: Site Public
+  ✓ http://prod-web.innov-techFarah.com/ - OK
+
+═══════════════════════════════════════════════════════════
