@@ -1,0 +1,21 @@
+[2026-01-07 01:03:43] [INFO] ═══════════════════════════════════════════════════════════
+[2026-01-07 01:03:43] [INFO] LEMP Auto-Installer - Session démarrée
+[2026-01-07 01:03:43] [INFO] Date: 2026-01-07 01:03:43
+[2026-01-07 01:03:43] [INFO] Utilisateur: root
+[2026-01-07 01:03:43] [INFO] ═══════════════════════════════════════════════════════════
+[2026-01-07 01:03:54] [INFO] ═══ Début: system-prepare ═══
+[2026-01-07 01:04:17] [INFO] Hostname: srv-web01
+[2026-01-07 01:04:17] [INFO] ═══ Fin: system-prepare ═══
+[2026-01-07 01:04:17] [INFO] ═══ Début: nginx-install ═══
+[2026-01-07 01:04:29] [INFO] ═══ Fin: nginx-install ═══
+[2026-01-07 01:04:29] [INFO] ═══ Début: mariadb-install ═══
+[2026-01-07 01:04:53] [INFO] ═══ Fin: mariadb-install ═══
+[2026-01-07 01:04:53] [INFO] ═══ Début: php-install ═══
+[2026-01-07 01:05:28] [INFO] ═══ Fin: php-install ═══
+[2026-01-07 01:05:28] [INFO] ═══ Début: vhosts-create ═══
+[2026-01-07 01:05:28] [INFO] ═══ Fin: vhosts-create ═══
+[2026-01-07 01:05:28] [INFO] ═══ Début: phpmyadmin-install ═══
+[2026-01-07 01:05:42] [INFO] ═══ Fin: phpmyadmin-install ═══
+[2026-01-07 01:05:42] [INFO] ═══ Début: security ═══
+[2026-01-07 01:05:42] [INFO] ═══ Fin: security ═══
+[2026-01-07 01:05:42] [INFO] ═══ Début: finalize ═══
