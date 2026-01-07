@@ -1,8 +1,0 @@
-<?php
-// Script PHP Info
-// Généré automatiquement par LEMP Auto-Installer
-// Étudiant: {{STUDENT_FIRSTNAME}} {{STUDENT_LASTNAME}}
-// Formation: {{STUDENT_FORMATION}}
-
-phpinfo();
-?>
