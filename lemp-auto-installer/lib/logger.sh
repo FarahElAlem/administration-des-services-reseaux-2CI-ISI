@@ -1,49 +1,116 @@
 #!/bin/bash
-# Système de logging avancé
+# ═══════════════════════════════════════════════════════════
+# Système de logs
+# ═══════════════════════════════════════════════════════════
 
-LOG_FILE="${LOG_FILE:-/var/log/lemp-install.log}"
-LOG_LEVEL="${LOG_LEVEL:-INFO}"
-VERBOSE="${VERBOSE:-true}"
+# Variables globales pour les logs
+LOG_FILE=""
+LOG_SECTION=""
 
-declare -A LOG_LEVELS=([DEBUG]=0 [INFO]=1 [WARNING]=2 [ERROR]=3 [CRITICAL]=4)
+# ═══════════════════════════════════════════════════════════
+# Initialiser le système de logs
+# ═══════════════════════════════════════════════════════════
 
-init_logger() {
-    local log_dir=$(dirname "$LOG_FILE")
-    mkdir -p "$log_dir" 2>/dev/null || LOG_FILE="/tmp/lemp-install.log"
-    : > "$LOG_FILE" || { LOG_FILE="/tmp/lemp-install.log"; : > "$LOG_FILE"; }
+init_log() {
+    local log_dir="${OUTPUT_DIR:-./output}/logs"
+    mkdir -p "$log_dir"
     
-    log_info "═══════════════════════════════════════════════════════════"
-    log_info "LEMP Auto-Installer - Session démarrée"
-    log_info "Date: $(date '+%Y-%m-%d %H:%M:%S')"
-    log_info "Utilisateur: $(whoami)"
-    log_info "═══════════════════════════════════════════════════════════"
+    LOG_FILE="${log_dir}/installation-$(date +%Y%m%d-%H%M%S).log"
+    
+    # Créer le fichier de log
+    {
+        echo "═══════════════════════════════════════════════════════════"
+        echo "LEMP Auto-Installer - Log d'installation"
+        echo "═══════════════════════════════════════════════════════════"
+        echo "Date: $(date '+%Y-%m-%d %H:%M:%S')"
+        echo "User: $(whoami)"
+        echo "Hostname: $(hostname)"
+        echo "═══════════════════════════════════════════════════════════"
+        echo ""
+    } > "$LOG_FILE"
+    
+    log_info "Initialisation des logs: $LOG_FILE"
 }
 
-_log() {
-    local level=$1; shift
-    local message="$@"
-    local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
-    
-    if [ ${LOG_LEVELS[$level]} -ge ${LOG_LEVELS[$LOG_LEVEL]} ]; then
-        echo "[$timestamp] [$level] $message" >> "$LOG_FILE"
-    fi
+# ═══════════════════════════════════════════════════════════
+# Fonctions de logging
+# ═══════════════════════════════════════════════════════════
+
+log_info() {
+    local message="$1"
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] [INFO] $message" >> "$LOG_FILE"
 }
 
-log_info() { _log "INFO" "$@"; }
-log_error() { _log "ERROR" "$@"; }
-log_warning() { _log "WARNING" "$@"; }
+log_success() {
+    local message="$1"
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] [SUCCESS] $message" >> "$LOG_FILE"
+}
+
+log_warning() {
+    local message="$1"
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] [WARNING] $message" >> "$LOG_FILE"
+}
+
+log_error() {
+    local message="$1"
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] [ERROR] $message" >> "$LOG_FILE"
+}
 
 log_command() {
-    local description="$1"; shift
-    log_info "Exécution: $description"
-    if $@ >> "$LOG_FILE" 2>&1; then
-        log_info "✓ $description: Succès"
-        return 0
-    else
-        log_error "✗ $description: Échec"
-        return 1
-    fi
+    local command="$1"
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] [CMD] $command" >> "$LOG_FILE"
 }
 
-save_log_section() { log_info "═══ Début: $1 ═══"; }
-end_log_section() { log_info "═══ Fin: $1 ═══"; }
+# ═══════════════════════════════════════════════════════════
+# Sections de logs
+# ═══════════════════════════════════════════════════════════
+
+save_log_section() {
+    LOG_SECTION="$1"
+    {
+        echo ""
+        echo "───────────────────────────────────────────────────────────"
+        echo "Section: $LOG_SECTION"
+        echo "───────────────────────────────────────────────────────────"
+    } >> "$LOG_FILE"
+}
+
+end_log_section() {
+    local section="$1"
+    {
+        echo "───────────────────────────────────────────────────────────"
+        echo "Fin de section: $section"
+        echo ""
+    } >> "$LOG_FILE"
+}
+
+# ═══════════════════════════════════════════════════════════
+# Sauvegarder une commande et sa sortie
+# ═══════════════════════════════════════════════════════════
+
+log_exec() {
+    local command="$*"
+    log_command "$command"
+    
+    {
+        echo "Sortie:"
+        eval "$command" 2>&1 | tee -a "$LOG_FILE"
+        echo "Code retour: ${PIPESTATUS[0]}"
+    } >> "$LOG_FILE" 2>&1
+}
+
+# ═══════════════════════════════════════════════════════════
+# Finaliser les logs
+# ═══════════════════════════════════════════════════════════
+
+finalize_log() {
+    {
+        echo ""
+        echo "═══════════════════════════════════════════════════════════"
+        echo "Fin de l'installation"
+        echo "Date: $(date '+%Y-%m-%d %H:%M:%S')"
+        echo "═══════════════════════════════════════════════════════════"
+    } >> "$LOG_FILE"
+    
+    log_info "Log finalisé: $LOG_FILE"
+}
